@@ -1,0 +1,2110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Школа Тьмы - Хоррор Выживание</title>
+    <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Oxanium:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-drag: none;
+        }
+        
+        body {
+            background-color: #0a0a0a;
+            color: #ff3c3c;
+            font-family: 'Oxanium', cursive;
+            overflow: hidden;
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle, #220000 0%, #000000 70%);
+        }
+        
+        #game-canvas {
+            position: absolute;
+            background-color: #0a0404;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+            border: 3px solid #8a0303;
+            border-radius: 5px;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: pixelated;
+        }
+        
+        #ui-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        #vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 0 150px 80px rgba(0, 0, 0, 0.9);
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        #static {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                repeating-linear-gradient(
+                    0deg,
+                    rgba(0, 0, 0, 0.15),
+                    rgba(0, 0, 0, 0.15) 1px,
+                    transparent 1px,
+                    transparent 2px
+                );
+            opacity: 0.15;
+            pointer-events: none;
+            animation: staticFlicker 8s infinite alternate;
+        }
+        
+        .screen {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 20;
+            transition: opacity 0.8s ease-in-out;
+        }
+        
+        #loading-screen {
+            background: radial-gradient(circle, #330000 0%, #110000 70%);
+        }
+        
+        .loader {
+            width: 80px;
+            height: 80px;
+            border: 6px solid #400;
+            border-top: 6px solid #ff0000;
+            border-radius: 50%;
+            animation: spin 1.8s linear infinite;
+            margin-bottom: 30px;
+            box-shadow: 0 0 20px #ff0000;
+        }
+        
+        .title {
+            font-size: clamp(2.5rem, 10vw, 5rem);
+            text-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000;
+            margin-bottom: 2rem;
+            letter-spacing: 0.4rem;
+            animation: flicker 3.5s infinite alternate;
+            color: #ff3c3c;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 0 15px;
+            font-family: 'Creepster', cursive;
+        }
+        
+        .subtitle {
+            font-size: clamp(1rem, 4vw, 1.8rem);
+            margin-bottom: 3rem;
+            text-align: center;
+            text-shadow: 0 0 8px #8a0303;
+            max-width: 90%;
+            line-height: 1.7;
+            padding: 0 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(to bottom, #500, #300);
+            color: #ff6a6a;
+            border: 3px solid #8a0303;
+            padding: 18px 50px;
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            cursor: pointer;
+            transition: all 0.4s;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            box-shadow: 0 0 15px #ff0000, inset 0 0 10px rgba(255, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            font-weight: bold;
+            pointer-events: auto;
+        }
+        
+        .btn:hover, .btn:active {
+            background: linear-gradient(to bottom, #8a0303, #600);
+            color: #000;
+            box-shadow: 0 0 25px #ff0000, inset 0 0 15px rgba(255, 0, 0, 0.5);
+            transform: translateY(-3px);
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.6s;
+        }
+        
+        .btn:hover::before {
+            left: 100%;
+        }
+        
+        #hud {
+            position: absolute;
+            top: 25px;
+            left: 25px;
+            z-index: 15;
+            color: #ff6a6a;
+            font-size: clamp(0.9rem, 4vw, 1.4rem);
+            text-shadow: 0 0 8px #ff0000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #8a0303;
+        }
+        
+        .hud-bar {
+            width: clamp(180px, 45vw, 250px);
+            height: clamp(18px, 4vw, 25px);
+            background: #300;
+            border: 2px solid #8a0303;
+            position: relative;
+            border-radius: 5px;
+            overflow: hidden;
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.3);
+        }
+        
+        .hud-fill {
+            height: 100%;
+            transition: width 0.4s;
+        }
+        
+        #health {
+            width: 100%;
+            background: linear-gradient(90deg, #ff0000, #8a0303);
+        }
+        
+        #fear {
+            width: 0%;
+            background: linear-gradient(90deg, #4b0082, #8a2be2);
+        }
+        
+        #flashlight {
+            width: 0%;
+            background: linear-gradient(90deg, #ffff00, #ffa500);
+        }
+        
+        #inventory {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            z-index: 15;
+            display: flex;
+            gap: 15px;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #8a0303;
+        }
+        
+        .item-slot {
+            width: clamp(50px, 12vw, 70px);
+            height: clamp(50px, 12vw, 70px);
+            background: rgba(48, 0, 0, 0.7);
+            border: 2px solid #8a0303;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ff6a6a;
+            font-size: clamp(1.2rem, 5vw, 1.8rem);
+            border-radius: 8px;
+            box-shadow: 0 0 8px rgba(255, 0, 0, 0.3);
+        }
+        
+        .item-slot.has-item {
+            background: rgba(80, 0, 0, 0.9);
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.7);
+            animation: pulse 1.5s infinite;
+        }
+        
+        #message {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #ff0000;
+            font-size: clamp(1.2rem, 5vw, 2.5rem);
+            text-align: center;
+            text-shadow: 0 0 15px #ff0000;
+            opacity: 0;
+            z-index: 15;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 25px 50px;
+            border: 3px solid #8a0303;
+            border-radius: 15px;
+            pointer-events: none;
+            max-width: 90%;
+            transition: opacity 0.6s;
+            font-family: 'Creepster', cursive;
+            box-shadow: 0 0 30px rgba(255, 0, 0, 0.4);
+        }
+        
+        #mobile-controls {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            width: 100%;
+            display: none;
+            justify-content: space-between;
+            padding: 0 25px;
+            z-index: 15;
+            touch-action: none;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        .control-group-horizontal {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .control-btn {
+            width: 70px;
+            height: 70px;
+            background: rgba(48, 0, 0, 0.6);
+            border: 3px solid #8a0303;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ff6a6a;
+            font-size: 1.8rem;
+            touch-action: none;
+            user-select: none;
+            pointer-events: auto;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+            transition: all 0.2s;
+        }
+        
+        .control-btn.active {
+            background: rgba(138, 3, 3, 0.8);
+            transform: scale(0.95);
+            box-shadow: 0 0 20px #ff0000;
+            color: #fff;
+        }
+        
+        #joystick-area {
+            position: absolute;
+            left: 50px;
+            bottom: 50px;
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: rgba(48, 0, 0, 0.3);
+            border: 3px solid #8a0303;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 15;
+            touch-action: none;
+            pointer-events: auto;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.3);
+        }
+        
+        #joystick {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 0, 0, 0.6);
+            border-radius: 50%;
+            touch-action: none;
+            transition: transform 0.1s;
+            box-shadow: 0 0 15px #ff0000;
+        }
+        
+        .blood-effect {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            z-index: 16;
+            background: radial-gradient(circle, transparent 30%, rgba(255, 0, 0, 0.3) 70%);
+            transition: opacity 0.5s;
+        }
+        
+        #action-buttons {
+            position: absolute;
+            right: 25px;
+            bottom: 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 15;
+        }
+        
+        .action-button {
+            width: 80px;
+            height: 80px;
+            background: rgba(48, 0, 0, 0.6);
+            border: 3px solid #8a0303;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #ff6a6a;
+            font-size: 1.8rem;
+            touch-action: none;
+            user-select: none;
+            pointer-events: auto;
+            box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+            transition: all 0.2s;
+        }
+        
+        .action-button.active {
+            background: rgba(138, 3, 3, 0.8);
+            transform: scale(0.95);
+            box-shadow: 0 0 20px #ff0000;
+            color: #fff;
+        }
+        
+        #objectives {
+            position: absolute;
+            bottom: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            color: #ff6a6a;
+            font-size: clamp(0.8rem, 3vw, 1.2rem);
+            text-shadow: 0 0 8px #ff0000;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #8a0303;
+            max-width: 90%;
+            text-align: center;
+            pointer-events: none;
+        }
+        
+        .jumpscare {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="black"/><text x="50" y="50" font-family="Arial" font-size="10" fill="red">?</text></svg>') center/cover no-repeat;
+            z-index: 25;
+            display: none;
+            animation: jumpscare 0.5s infinite;
+        }
+        
+        @keyframes flicker {
+            0%, 100% { opacity: 1; text-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000; }
+            50% { opacity: 0.7; text-shadow: 0 0 5px #ff0000, 0 0 10px #ff0000; }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0) translateY(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-8px) translateY(-8px); }
+            20%, 40%, 60%, 80% { transform: translateX(8px) translateY(8px); }
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.08); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        @keyframes breathe {
+            0%, 100% { box-shadow: 0 0 15px rgba(255, 0, 0, 0.6); }
+            50% { box-shadow: 0 0 25px rgba(255, 0, 0, 0.9); }
+        }
+        
+        @keyframes staticFlicker {
+            0%, 100% { opacity: 0.15; }
+            50% { opacity: 0.25; }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes glow {
+            0%, 100% { filter: drop-shadow(0 0 5px #ff0000); }
+            50% { filter: drop-shadow(0 0 15px #ff0000); }
+        }
+        
+        @keyframes jumpscare {
+            0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+            25% { transform: scale(1.2) rotate(2deg); }
+            50% { transform: scale(1.1) rotate(-2deg); }
+            75% { transform: scale(1.3) rotate(1deg); }
+        }
+        
+        .shake {
+            animation: shake 0.6s;
+        }
+        
+        .pulse {
+            animation: pulse 0.6s infinite;
+        }
+        
+        .breathe {
+            animation: breathe 2.5s infinite;
+        }
+        
+        .float {
+            animation: float 3s infinite ease-in-out;
+        }
+        
+        .glow {
+            animation: glow 2s infinite alternate;
+        }
+        
+        @media (max-width: 768px) {
+            #hud {
+                top: 15px;
+                left: 15px;
+                padding: 10px;
+            }
+            
+            #inventory {
+                top: 15px;
+                right: 15px;
+                padding: 10px;
+            }
+            
+            .hud-bar {
+                width: 150px;
+                height: 16px;
+            }
+            
+            .item-slot {
+                width: 45px;
+                height: 45px;
+                font-size: 1.2rem;
+            }
+            
+            #mobile-controls {
+                bottom: 20px;
+                padding: 0 15px;
+            }
+            
+            .control-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+            
+            #joystick-area {
+                width: 120px;
+                height: 120px;
+                left: 35px;
+                bottom: 35px;
+            }
+            
+            #joystick {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .action-button {
+                width: 70px;
+                height: 70px;
+                font-size: 1.5rem;
+            }
+            
+            #action-buttons {
+                right: 15px;
+                bottom: 35px;
+            }
+            
+            #objectives {
+                bottom: 180px;
+                font-size: 0.9rem;
+                padding: 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .title {
+                font-size: 2.2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .btn {
+                padding: 15px 40px;
+            }
+            
+            #hud {
+                top: 10px;
+                left: 10px;
+                padding: 8px;
+                font-size: 0.8rem;
+            }
+            
+            #inventory {
+                top: 10px;
+                right: 10px;
+                padding: 8px;
+                gap: 10px;
+            }
+            
+            .hud-bar {
+                width: 120px;
+                height: 14px;
+            }
+            
+            .item-slot {
+                width: 40px;
+                height: 40px;
+                font-size: 1rem;
+            }
+            
+            .control-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 1.2rem;
+            }
+            
+            #joystick-area {
+                width: 100px;
+                height: 100px;
+                left: 25px;
+                bottom: 25px;
+            }
+            
+            #joystick {
+                width: 40px;
+                height: 40px;
+            }
+            
+            #mobile-controls {
+                padding: 0 10px;
+            }
+            
+            .control-group {
+                gap: 10px;
+            }
+            
+            .action-button {
+                width: 60px;
+                height: 60px;
+                font-size: 1.2rem;
+            }
+            
+            #action-buttons {
+                right: 10px;
+                bottom: 25px;
+                gap: 10px;
+            }
+            
+            #objectives {
+                bottom: 160px;
+                font-size: 0.8rem;
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <canvas id="game-canvas"></canvas>
+        
+        <div id="ui-overlay">
+            <div id="vignette"></div>
+            <div id="static"></div>
+            <div class="blood-effect" id="blood-effect"></div>
+            <div class="jumpscare" id="jumpscare"></div>
+            
+            <div id="hud">
+                <div>ЗДОРОВЬЕ:</div>
+                <div class="hud-bar"><div class="hud-fill" id="health"></div></div>
+                <div>СТРАХ:</div>
+                <div class="hud-bar"><div class="hud-fill" id="fear"></div></div>
+                <div>ФОНАРИК:</div>
+                <div class="hud-bar"><div class="hud-fill" id="flashlight"></div></div>
+                <div id="location">КОМНАТА 1-A</div>
+            </div>
+            
+            <div id="inventory">
+                <div class="item-slot" id="slot1"></div>
+                <div class="item-slot" id="slot2"></div>
+                <div class="item-slot" id="slot3"></div>
+            </div>
+            
+            <div id="objectives">
+                НАЙДИТЕ КЛЮЧ И ВЫБЕРИТЕСЬ ИЗ ШКОЛЫ
+            </div>
+            
+            <div id="message"></div>
+            
+            <div id="mobile-controls">
+                <div class="control-group">
+                    <div class="control-btn" id="up-btn">↑</div>
+                    <div class="control-group-horizontal">
+                        <div class="control-btn" id="left-btn">←</div>
+                        <div class="control-btn" id="down-btn">↓</div>
+                        <div class="control-btn" id="right-btn">→</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="joystick-area">
+                <div id="joystick"></div>
+            </div>
+            
+            <div id="action-buttons">
+                <div class="action-button" id="action-btn">E</div>
+                <div class="action-button" id="flashlight-btn">🔦</div>
+            </div>
+        </div>
+        
+        <div id="loading-screen" class="screen">
+            <div class="loader"></div>
+            <div class="subtitle">Загрузка кошмаров...</div>
+        </div>
+        
+        <div id="start-screen" class="screen" style="display: none;">
+            <h1 class="title">ШКОЛА ТЬМЫ</h1>
+            <p class="subtitle">Вы застряли в школе после полуночи... Учителя превратились в монстров. Найдите ключ и выбрайтесь наружу, пока не стало слишком поздно.</p>
+            <button id="start-btn" class="btn">Начать игру</button>
+        </div>
+        
+        <div id="game-over" class="screen" style="display: none;">
+            <h2 class="title">ВЫ ПОГИБЛИ</h2>
+            <p class="subtitle">Тьма поглотила вас. Школа не отпускает тех, кто забрел в её коридоры после полуночи.</p>
+            <button class="btn restart-btn">Попробовать снова</button>
+        </div>
+        
+        <div id="game-win" class="screen" style="display: none;">
+            <h2 class="title">СВОБОДА</h2>
+            <p class="subtitle">Вам удалось выбраться из этого кошмара. Но школа всё ещё стоит там, ожидая следующую жертву...</p>
+            <button class="btn restart-btn">Сыграть ещё</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Определение устройств
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+            
+            // Элементы игры
+            const loadingScreen = document.getElementById('loading-screen');
+            const startScreen = document.getElementById('start-screen');
+            const startBtn = document.getElementById('start-btn');
+            const gameOverScreen = document.getElementById('game-over');
+            const gameWinScreen = document.getElementById('game-win');
+            const restartBtns = document.querySelectorAll('.restart-btn');
+            const canvas = document.getElementById('game-canvas');
+            const ctx = canvas.getContext('2d');
+            const healthBar = document.getElementById('health');
+            const fearBar = document.getElementById('fear');
+            const flashlightBar = document.getElementById('flashlight');
+            const messageElement = document.getElementById('message');
+            const locationElement = document.getElementById('location');
+            const objectivesElement = document.getElementById('objectives');
+            const mobileControls = document.getElementById('mobile-controls');
+            const joystickArea = document.getElementById('joystick-area');
+            const joystick = document.getElementById('joystick');
+            const upBtn = document.getElementById('up-btn');
+            const downBtn = document.getElementById('down-btn');
+            const leftBtn = document.getElementById('left-btn');
+            const rightBtn = document.getElementById('right-btn');
+            const actionBtn = document.getElementById('action-btn');
+            const flashlightBtn = document.getElementById('flashlight-btn');
+            const bloodEffect = document.getElementById('blood-effect');
+            const jumpscare = document.getElementById('jumpscare');
+            
+            // Настройки игры
+            const TILE_SIZE = 64;
+            const PLAYER_SPEED = 3.5; // Увеличена скорость для более плавного движения
+            const PLAYER_SIZE = 20;
+            const ENEMY_SPEED = 1.8;
+            const ENEMY_SIZE = 24;
+            const ITEM_SIZE = 16;
+            const FOV = 300;
+            
+            // Состояние игры
+            let gameActive = false;
+            let player = {
+                x: 0,
+                y: 0,
+                health: 100,
+                fear: 0,
+                flashlight: 100,
+                hasKey: false,
+                hasFlashlight: true,
+                flashlightOn: true,
+                direction: 0,
+                spriteState: 0,
+                lastStep: 0,
+                velocityX: 0,
+                velocityY: 0
+            };
+            
+            let map = [];
+            let enemies = [];
+            let items = [];
+            let exit = { x: 0, y: 0 };
+            let decorations = [];
+            let fogOfWar = [];
+            let objectives = [
+                "НАЙДИТЕ КЛЮЧ И ВЫБЕРИТЕСЬ ИЗ ШКОЛЫ",
+                "ОСТОРОЖНО! МОНСТРЫ БЛИЗКО!",
+                "ПРИЗРАКИ ЧУВСТВУЮТ ВАШ СТРАХ",
+                "ФОНАРИК РАЗРЯЖАЕТСЯ, ЭКОНОМЬТЕ ЗАРЯД"
+            ];
+            
+            let keys = {
+                w: false,
+                a: false,
+                s: false,
+                d: false,
+                e: false,
+                f: false,
+                arrowup: false,
+                arrowdown: false,
+                arrowleft: false,
+                arrowright: false
+            };
+            
+            let joystickActive = false;
+            let joystickOrigin = { x: 0, y: 0 };
+            let joystickPosition = { x: 0, y: 0 };
+            
+            let camera = {
+                x: 0,
+                y: 0
+            };
+            
+            let lastTime = 0;
+            let touchId = null;
+            let frameCount = 0;
+            let lastObjectiveChange = 0;
+            let currentObjective = 0;
+            
+            // Текстуры и спрайты
+            const textures = {
+                wall: '#5e2c2c',
+                floor: '#3c1e1e',
+                player: '#ff0000',
+                enemy: '#8b0000',
+                key: '#ffd700',
+                exit: '#00ff00',
+                window: '#1e90ff',
+                locker: '#a9a9a9',
+                desk: '#8b4513',
+                fog: '#000000',
+                medkit: '#00ff00',
+                battery: '#ffff00'
+            };
+            
+            // Уникальные враги
+            const enemyTypes = [
+                {
+                    name: "Уборщица",
+                    color: "#556b2f",
+                    speed: 1.6,
+                    fearFactor: 0.7,
+                    detectionRange: 250,
+                    detectionTime: 2000,
+                    sound: "Скрип швабры..."
+                },
+                {
+                    name: "Учитель английского",
+                    color: "#8b0000", 
+                    speed: 1.8,
+                    fearFactor: 0.9,
+                    detectionRange: 300,
+                    detectionTime: 1500,
+                    sound: "I'll find you..."
+                },
+                {
+                    name: "Учитель русского",
+                    color: "#dc143c",
+                    speed: 2.0,
+                    fearFactor: 1.1,
+                    detectionRange: 350,
+                    detectionTime: 1000,
+                    sound: "Двойка за побег!"
+                },
+                {
+                    name: "Призрак ученика",
+                    color: "#4b0082",
+                    speed: 2.2,
+                    fearFactor: 1.3,
+                    detectionRange: 400,
+                    detectionTime: 800,
+                    sound: "Поиграй со мной..."
+                }
+            ];
+
+            // Инициализация игры
+            function initGame() {
+                resizeCanvas();
+                generateMap(25, 25);
+                initFogOfWar();
+                
+                player.x = TILE_SIZE * 4.5;
+                player.y = TILE_SIZE * 4.5;
+                player.health = 100;
+                player.fear = 0;
+                player.flashlight = 100;
+                player.hasKey = false;
+                player.hasFlashlight = true;
+                player.flashlightOn = true;
+                player.direction = 0;
+                player.spriteState = 0;
+                player.lastStep = 0;
+                player.velocityX = 0;
+                player.velocityY = 0;
+                
+                enemies = [];
+                // Создаем врагов
+                for (let i = 0; i < 4; i++) {
+                    let validPosition = false;
+                    let enemyX, enemyY;
+                    
+                    while (!validPosition) {
+                        enemyX = Math.floor(Math.random() * (map[0].length - 4)) * TILE_SIZE + TILE_SIZE * 2;
+                        enemyY = Math.floor(Math.random() * (map.length - 4)) * TILE_SIZE + TILE_SIZE * 2;
+                        
+                        const tileX = Math.floor(enemyX / TILE_SIZE);
+                        const tileY = Math.floor(enemyY / TILE_SIZE);
+                        
+                        if (map[tileY][tileX] === 0) {
+                            validPosition = true;
+                        }
+                    }
+                    
+                    const type = enemyTypes[i % enemyTypes.length];
+                    enemies.push({
+                        x: enemyX,
+                        y: enemyY,
+                        type: i,
+                        name: type.name,
+                        color: type.color,
+                        speed: type.speed,
+                        fearFactor: type.fearFactor,
+                        detectionRange: type.detectionRange,
+                        detectionTime: type.detectionTime,
+                        sound: type.sound,
+                        detectionProgress: 0,
+                        detectedPlayer: false,
+                        active: true,
+                        spriteState: 0,
+                        lastMove: 0,
+                        lastSound: 0
+                    });
+                }
+                
+                items = [
+                    {
+                        x: (map[0].length - 3) * TILE_SIZE + TILE_SIZE/2,
+                        y: (map.length - 3) * TILE_SIZE + TILE_SIZE/2,
+                        type: 'key',
+                        collected: false
+                    },
+                    {
+                        x: (map[0].length - 10) * TILE_SIZE + TILE_SIZE/2,
+                        y: (map.length - 10) * TILE_SIZE + TILE_SIZE/2,
+                        type: 'medkit',
+                        collected: false
+                    },
+                    {
+                        x: (map[0].length - 15) * TILE_SIZE + TILE_SIZE/2,
+                        y: (map.length - 15) * TILE_SIZE + TILE_SIZE/2,
+                        type: 'battery',
+                        collected: false
+                    }
+                ];
+                
+                exit = {
+                    x: TILE_SIZE * 1.5,
+                    y: TILE_SIZE * 1.5
+                };
+                
+                generateDecorations();
+                
+                if (isTouchDevice) {
+                    mobileControls.style.display = 'flex';
+                    joystickArea.style.display = 'flex';
+                    document.getElementById('action-buttons').style.display = 'flex';
+                } else {
+                    mobileControls.style.display = 'none';
+                    joystickArea.style.display = 'none';
+                    document.getElementById('action-buttons').style.display = 'none';
+                }
+                
+                startScreen.style.display = 'none';
+                gameActive = true;
+                
+                document.getElementById('slot1').textContent = "";
+                document.getElementById('slot2').textContent = "";
+                document.getElementById('slot3').textContent = "";
+                document.getElementById('slot1').classList.remove('has-item');
+                document.getElementById('slot2').classList.remove('has-item');
+                document.getElementById('slot3').classList.remove('has-item');
+                
+                requestAnimationFrame(gameLoop);
+                startFearEvents();
+                startObjectiveRotation();
+                
+                showMessage("Я должен найти ключ и выбраться отсюда!", 3000);
+            }
+            
+            function initFogOfWar() {
+                fogOfWar = [];
+                for (let y = 0; y < map.length; y++) {
+                    fogOfWar[y] = [];
+                    for (let x = 0; x < map[0].length; x++) {
+                        fogOfWar[y][x] = false;
+                    }
+                }
+            }
+            
+            function updateFogOfWar() {
+                const playerTileX = Math.floor(player.x / TILE_SIZE);
+                const playerTileY = Math.floor(player.y / TILE_SIZE);
+                
+                // Видимость зависит от состояния фонарика
+                let radius;
+                if (!player.hasFlashlight || player.flashlight <= 0) {
+                    radius = 1; // Почти ничего не видно без фонарика
+                } else if (!player.flashlightOn) {
+                    radius = 2; // Видимость ограничена при выключенном фонарике
+                } else {
+                    radius = 5; // Нормальная видимость с фонариком
+                }
+                
+                for (let y = playerTileY - radius; y <= playerTileY + radius; y++) {
+                    for (let x = playerTileX - radius; x <= playerTileX + radius; x++) {
+                        if (x >= 0 && y >= 0 && x < map[0].length && y < map.length) {
+                            const distance = Math.sqrt(Math.pow(x - playerTileX, 2) + Math.pow(y - playerTileY, 2));
+                            if (distance <= radius) {
+                                fogOfWar[y][x] = true;
+                                
+                                if (map[y][x] === 0) {
+                                    discoverRoom(x, y);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            function discoverRoom(startX, startY) {
+                const queue = [{x: startX, y: startY}];
+                const visited = new Set();
+                
+                while (queue.length > 0) {
+                    const {x, y} = queue.shift();
+                    const key = `${x},${y}`;
+                    
+                    if (visited.has(key)) continue;
+                    visited.add(key);
+                    
+                    if (x < 0 || y < 0 || x >= map[0].length || y >= map.length) continue;
+                    if (map[y][x] === 1) continue;
+                    
+                    fogOfWar[y][x] = true;
+                    
+                    queue.push({x: x+1, y});
+                    queue.push({x: x-1, y});
+                    queue.push({x, y: y+1});
+                    queue.push({x, y: y-1});
+                }
+            }
+            
+            function generateMap(width, height) {
+                map = [];
+                
+                for (let y = 0; y < height; y++) {
+                    map[y] = [];
+                    for (let x = 0; x < width; x++) {
+                        if (x === 0 || y === 0 || x === width - 1 || y === height - 1) {
+                            map[y][x] = 1;
+                        } else {
+                            map[y][x] = 0;
+                        }
+                    }
+                }
+                
+                // Создаем комнаты без дверей
+                createRoom(2, 2, 5, 5);
+                createRoom(10, 2, 7, 5);
+                createRoom(18, 2, 5, 5);
+                createRoom(2, 10, 5, 7);
+                createRoom(10, 10, 7, 7);
+                createRoom(18, 10, 5, 7);
+                createRoom(2, 18, 5, 5);
+                createRoom(10, 18, 7, 5);
+                createRoom(18, 18, 5, 5);
+                
+                // Создаем коридоры без дверей
+                createHorizontalCorridor(7, 4, 3);
+                createHorizontalCorridor(7, 14, 3);
+                createHorizontalCorridor(7, 20, 3);
+                createVerticalCorridor(4, 7, 3);
+                createVerticalCorridor(14, 7, 3);
+                createVerticalCorridor(20, 7, 3);
+            }
+            
+            function createRoom(x, y, width, height) {
+                for (let i = y; i < y + height; i++) {
+                    for (let j = x; j < x + width; j++) {
+                        if (i === y || i === y + height - 1 || j === x || j === x + width - 1) {
+                            map[i][j] = 1;
+                        } else {
+                            map[i][j] = 0;
+                        }
+                    }
+                }
+                
+                // Создаем проходы вместо дверей
+                if (Math.random() > 0.5) {
+                    // Горизонтальный проход
+                    map[y + Math.floor(height/2)][x] = 0;
+                    map[y + Math.floor(height/2)][x + width - 1] = 0;
+                } else {
+                    // Вертикальный проход
+                    map[y][x + Math.floor(width/2)] = 0;
+                    map[y + height - 1][x + Math.floor(width/2)] = 0;
+                }
+            }
+            
+            function createHorizontalCorridor(x, y, length) {
+                for (let i = x; i < x + length; i++) {
+                    map[y][i] = 0;
+                }
+            }
+            
+            function createVerticalCorridor(x, y, length) {
+                for (let i = y; i < y + length; i++) {
+                    map[i][x] = 0;
+                }
+            }
+            
+            function generateDecorations() {
+                decorations = [];
+                
+                for (let y = 0; y < map.length; y++) {
+                    for (let x = 0; x < map[0].length; x++) {
+                        if (map[y][x] === 0 && Math.random() < 0.05) {
+                            const decorTypes = ['desk', 'locker', 'desk', 'locker', 'window'];
+                            const type = decorTypes[Math.floor(Math.random() * decorTypes.length)];
+                            
+                            decorations.push({
+                                x: x * TILE_SIZE + TILE_SIZE/2,
+                                y: y * TILE_SIZE + TILE_SIZE/2,
+                                type: type
+                            });
+                        }
+                    }
+                }
+            }
+            
+            function resizeCanvas() {
+                if (isMobile) {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                } else {
+                    const size = Math.min(window.innerWidth, window.innerHeight) * 0.9;
+                    canvas.width = size;
+                    canvas.height = size;
+                }
+            }
+            
+            function gameLoop(timestamp) {
+                if (!gameActive) return;
+                
+                const deltaTime = Math.min(50, timestamp - lastTime);
+                lastTime = timestamp;
+                frameCount++;
+                
+                ctx.fillStyle = '#0a0404';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                updatePlayer(deltaTime, timestamp);
+                updateFogOfWar();
+                
+                camera.x = player.x - canvas.width / 2;
+                camera.y = player.y - canvas.height / 2;
+                
+                renderMap();
+                renderDecorations();
+                renderItems();
+                renderExit();
+                updateEnemies(deltaTime, timestamp);
+                renderEnemies();
+                renderPlayer();
+                renderEffects();
+                updateHUD();
+                checkGameState();
+                
+                requestAnimationFrame(gameLoop);
+            }
+            
+            function updatePlayer(deltaTime, timestamp) {
+                let targetVelocityX = 0;
+                let targetVelocityY = 0;
+                
+                if (keys.w || keys.arrowup || (upBtn && upBtn.classList.contains('active'))) {
+                    targetVelocityY -= PLAYER_SPEED;
+                }
+                if (keys.s || keys.arrowdown || (downBtn && downBtn.classList.contains('active'))) {
+                    targetVelocityY += PLAYER_SPEED;
+                }
+                if (keys.a || keys.arrowleft || (leftBtn && leftBtn.classList.contains('active'))) {
+                    targetVelocityX -= PLAYER_SPEED;
+                }
+                if (keys.d || keys.arrowright || (rightBtn && rightBtn.classList.contains('active'))) {
+                    targetVelocityX += PLAYER_SPEED;
+                }
+                
+                if (joystickActive) {
+                    const joyX = (joystickPosition.x - joystickOrigin.x) / 20;
+                    const joyY = (joystickPosition.y - joystickOrigin.y) / 20;
+                    
+                    targetVelocityX += joyX;
+                    targetVelocityY += joyY;
+                }
+                
+                // Плавное изменение скорости
+                const acceleration = 0.2;
+                player.velocityX += (targetVelocityX - player.velocityX) * acceleration;
+                player.velocityY += (targetVelocityY - player.velocityY) * acceleration;
+                
+                // Минимальная скорость для предотвращения дрейфа
+                if (Math.abs(player.velocityX) < 0.1) player.velocityX = 0;
+                if (Math.abs(player.velocityY) < 0.1) player.velocityY = 0;
+                
+                if (player.velocityX !== 0 || player.velocityY !== 0) {
+                    player.direction = Math.atan2(player.velocityY, player.velocityX);
+                    
+                    if (timestamp - player.lastStep > 200) {
+                        player.spriteState = (player.spriteState + 1) % 4;
+                        player.lastStep = timestamp;
+                    }
+                } else {
+                    player.spriteState = 0;
+                }
+                
+                const newX = player.x + player.velocityX;
+                const newY = player.y + player.velocityY;
+                
+                if (!isCollision(newX, player.y)) player.x = newX;
+                if (!isCollision(player.x, newY)) player.y = newY;
+                
+                checkItemsProximity();
+                
+                if (keys.e || (actionBtn && actionBtn.classList.contains('active'))) {
+                    tryInteraction();
+                }
+                
+                if (keys.f || (flashlightBtn && flashlightBtn.classList.contains('active'))) {
+                    toggleFlashlight();
+                }
+                
+                // Разряжаем фонарик только если он включен
+                if (player.flashlightOn && player.hasFlashlight) {
+                    player.flashlight -= 0.05;
+                    if (player.flashlight <= 0) {
+                        player.flashlight = 0;
+                        player.flashlightOn = false;
+                        showMessage("Фонарик разрядился!", 2000);
+                    }
+                }
+                
+                updateLocation();
+            }
+            
+            function isCollision(x, y) {
+                const tileX = Math.floor(x / TILE_SIZE);
+                const tileY = Math.floor(y / TILE_SIZE);
+                
+                if (tileX < 0 || tileY < 0 || tileY >= map.length || tileX >= map[0].length) {
+                    return true;
+                }
+                
+                return map[tileY][tileX] === 1;
+            }
+            
+            function checkItemsProximity() {
+                items.forEach(item => {
+                    if (item.collected) return;
+                    
+                    const dx = player.x - item.x;
+                    const dy = player.y - item.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < TILE_SIZE) {
+                        if (item.type === 'key') {
+                            showMessage("Нажмите E чтобы взять ключ", 1000);
+                        } else if (item.type === 'medkit') {
+                            showMessage("Нажмите E чтобы взять аптечку", 1000);
+                        } else if (item.type === 'battery') {
+                            showMessage("Нажмите E чтобы взять батарейку", 1000);
+                        }
+                    }
+                });
+                
+                const exitDx = player.x - exit.x;
+                const exitDy = player.y - exit.y;
+                const exitDist = Math.sqrt(exitDx * exitDx + exitDy * exitDy);
+                
+                if (exitDist < TILE_SIZE && player.hasKey) {
+                    showMessage("Нажмите E чтобы открыть дверь", 1000);
+                }
+            }
+            
+            function updateLocation() {
+                const playerTileX = Math.floor(player.x / TILE_SIZE);
+                const playerTileY = Math.floor(player.y / TILE_SIZE);
+                
+                if (playerTileX < 8 && playerTileY < 8) {
+                    locationElement.textContent = "КОМНАТA 1-A";
+                } else if (playerTileX >= 10 && playerTileX < 17 && playerTileY < 8) {
+                    locationElement.textContent = "КОМНАТА 1-B";
+                } else if (playerTileX >= 18 && playerTileY < 8) {
+                    locationElement.textContent = "КОМНАТА 1-C";
+                } else if (playerTileX < 8 && playerTileY >= 10 && playerTileY < 17) {
+                    locationElement.textContent = "КОМНАТА 2-A";
+                } else if (playerTileX >= 10 && playerTileX < 17 && playerTileY >= 10 && playerTileY < 17) {
+                    locationElement.textContent = "ЦЕНТРАЛЬНЫЙ ЗАЛ";
+                } else if (playerTileX >= 18 && playerTileY >= 10 && playerTileY < 17) {
+                    locationElement.textContent = "КОМНАТА 2-C";
+                } else if (playerTileX < 8 && playerTileY >= 18) {
+                    locationElement.textContent = "КОМНАТА 3-A";
+                } else if (playerTileX >= 10 && playerTileX < 17 && playerTileY >= 18) {
+                    locationElement.textContent = "КОМНАТА 3-B";
+                } else if (playerTileX >= 18 && playerTileY >= 18) {
+                    locationElement.textContent = "ХРАНИЛИЩЕ";
+                } else {
+                    locationElement.textContent = "КОРИДОР";
+                }
+            }
+            
+            function tryInteraction() {
+                // Проверка предметов
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    if (item.collected) continue;
+                    
+                    const dx = player.x - item.x;
+                    const dy = player.y - item.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (dist < TILE_SIZE) {
+                        if (item.type === 'key') {
+                            item.collected = true;
+                            player.hasKey = true;
+                            showMessage("Я нашел ключ! Теперь нужно найти выход.", 3000);
+                            document.getElementById('slot1').textContent = "🔑";
+                            document.getElementById('slot1').classList.add('has-item');
+                            return;
+                        } else if (item.type === 'medkit') {
+                            item.collected = true;
+                            player.health = Math.min(100, player.health + 30);
+                            showMessage("Аптечка! Здоровье восстановлено.", 2000);
+                            document.getElementById('slot2').textContent = "💊";
+                            document.getElementById('slot2').classList.add('has-item');
+                            return;
+                        } else if (item.type === 'battery') {
+                            item.collected = true;
+                            player.flashlight = Math.min(100, player.flashlight + 50);
+                            showMessage("Батарейка! Фонарик заряжен.", 2000);
+                            document.getElementById('slot3').textContent = "🔋";
+                            document.getElementById('slot3').classList.add('has-item');
+                            return;
+                        }
+                    }
+                }
+                
+                // Проверка выхода
+                const exitDx = player.x - exit.x;
+                const exitDy = player.y - exit.y;
+                const exitDist = Math.sqrt(exitDx * exitDx + exitDy * exitDy);
+                
+                if (exitDist < TILE_SIZE && player.hasKey) {
+                    gameWin();
+                }
+            }
+            
+            function toggleFlashlight() {
+                if (!player.hasFlashlight || player.flashlight <= 0) {
+                    showMessage("Фонарик не работает!", 1000);
+                    return;
+                }
+                
+                player.flashlightOn = !player.flashlightOn;
+                if (player.flashlightOn) {
+                    showMessage("Фонарик включен", 1000);
+                } else {
+                    showMessage("Фонарик выключен", 1000);
+                }
+            }
+            
+            function updateEnemies(deltaTime, timestamp) {
+                enemies.forEach(enemy => {
+                    if (!enemy.active) return;
+                    
+                    const dx = player.x - enemy.x;
+                    const dy = player.y - enemy.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Проверка видимости игрока
+                    if (dist < enemy.detectionRange) {
+                        // Проверка прямой видимости
+                        const hasLineOfSight = checkLineOfSight(enemy.x, enemy.y, player.x, player.y);
+                        
+                        if (hasLineOfSight) {
+                            enemy.detectionProgress += deltaTime;
+                            
+                            if (enemy.detectionProgress >= enemy.detectionTime && !enemy.detectedPlayer) {
+                                enemy.detectedPlayer = true;
+                                showMessage(`${enemy.name} заметил меня!`, 2000);
+                                
+                                // Случайный прыжок испуга
+                                if (Math.random() < 0.3) {
+                                    triggerJumpscare(enemy);
+                                }
+                            }
+                            
+                            // Враги издают звуки, когда обнаруживают игрока
+                            if (enemy.detectedPlayer && timestamp - enemy.lastSound > 5000) {
+                                showMessage(`${enemy.name}: ${enemy.sound}`, 2000);
+                                enemy.lastSound = timestamp;
+                            }
+                        } else {
+                            enemy.detectionProgress = Math.max(0, enemy.detectionProgress - deltaTime / 2);
+                        }
+                    } else {
+                        enemy.detectionProgress = Math.max(0, enemy.detectionProgress - deltaTime);
+                    }
+                    
+                    // Если игрок обнаружен, преследовать
+                    if (enemy.detectedPlayer && dist < 600) {
+                        const angle = Math.atan2(dy, dx);
+                        const newX = enemy.x + Math.cos(angle) * enemy.speed;
+                        const newY = enemy.y + Math.sin(angle) * enemy.speed;
+                        
+                        if (!isCollision(newX, enemy.y)) enemy.x = newX;
+                        if (!isCollision(enemy.x, newY)) enemy.y = newY;
+                        
+                        if (timestamp - enemy.lastMove > 200) {
+                            enemy.spriteState = (enemy.spriteState + 1) % 4;
+                            enemy.lastMove = timestamp;
+                        }
+                        
+                        if (dist < PLAYER_SIZE + ENEMY_SIZE) {
+                            player.health -= 0.5;
+                            player.fear += enemy.fearFactor;
+                            document.getElementById('game-container').classList.add('shake');
+                            bloodEffect.style.opacity = '0.7';
+                            setTimeout(function() {
+                                document.getElementById('game-container').classList.remove('shake');
+                                bloodEffect.style.opacity = '0';
+                            }, 500);
+                            
+                            showMessage(`${enemy.name} атакует!`, 1000);
+                        }
+                        
+                        if (dist < FOV) {
+                            player.fear += 0.1 * enemy.fearFactor;
+                        }
+                    } else if (enemy.detectedPlayer && dist >= 600) {
+                        // Если игрок ушел далеко, сброс обнаружения
+                        enemy.detectedPlayer = false;
+                        enemy.detectionProgress = 0;
+                    }
+                });
+            }
+            
+            function triggerJumpscare(enemy) {
+                jumpscare.style.display = 'block';
+                jumpscare.style.background = `radial-gradient(circle, ${enemy.color} 0%, #000000 70%)`;
+                
+                setTimeout(function() {
+                    jumpscare.style.display = 'none';
+                }, 500);
+                
+                player.fear += 20;
+                showMessage("ААААА!!!", 1000);
+            }
+            
+            function checkLineOfSight(x1, y1, x2, y2) {
+                // Алгоритм Брезенхема для проверки прямой видимости
+                const dx = Math.abs(x2 - x1);
+                const dy = Math.abs(y2 - y1);
+                const sx = (x1 < x2) ? 1 : -1;
+                const sy = (y1 < y2) ? 1 : -1;
+                let err = dx - dy;
+                
+                let x = x1;
+                let y = y1;
+                
+                while (true) {
+                    if (x === x2 && y === y2) {
+                        break;
+                    }
+                    
+                    const tileX = Math.floor(x / TILE_SIZE);
+                    const tileY = Math.floor(y / TILE_SIZE);
+                    
+                    if (tileX < 0 || tileY < 0 || tileY >= map.length || tileX >= map[0].length) {
+                        return false;
+                    }
+                    
+                    if (map[tileY][tileX] === 1) {
+                        return false; // Стена блокирует обзор
+                    }
+                    
+                    const e2 = 2 * err;
+                    if (e2 > -dy) {
+                        err -= dy;
+                        x += sx;
+                    }
+                    if (e2 < dx) {
+                        err += dx;
+                        y += sy;
+                    }
+                }
+                
+                return true;
+            }
+            
+            function renderMap() {
+                const startX = Math.max(0, Math.floor(camera.x / TILE_SIZE));
+                const startY = Math.max(0, Math.floor(camera.y / TILE_SIZE));
+                const endX = Math.min(map[0].length, Math.ceil((camera.x + canvas.width) / TILE_SIZE));
+                const endY = Math.min(map.length, Math.ceil((camera.y + canvas.height) / TILE_SIZE));
+                
+                for (let y = startY; y < endY; y++) {
+                    for (let x = startX; x < endX; x++) {
+                        const screenX = x * TILE_SIZE - camera.x;
+                        const screenY = y * TILE_SIZE - camera.y;
+                        
+                        if (!fogOfWar[y][x]) {
+                            ctx.fillStyle = textures.fog;
+                            ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                            continue;
+                        }
+                        
+                        if (map[y][x] === 1) {
+                            ctx.fillStyle = textures.wall;
+                            ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                            
+                            ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                            ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                            
+                            ctx.fillStyle = '#4a1a1a';
+                            for (let i = 0; i < 4; i++) {
+                                ctx.fillRect(screenX + i * 16, screenY, 8, TILE_SIZE);
+                            }
+                        } else {
+                            ctx.fillStyle = textures.floor;
+                            ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                            
+                            if ((x + y) % 5 === 0 && frameCount % 60 < 30) {
+                                ctx.fillStyle = 'rgba(139, 0, 0, 0.1)';
+                                ctx.beginPath();
+                                ctx.arc(screenX + TILE_SIZE/2, screenY + TILE_SIZE/2, TILE_SIZE/4, 0, Math.PI * 2);
+                                ctx.fill();
+                            }
+                        }
+                    }
+                }
+            }
+            
+            function renderDecorations() {
+                decorations.forEach(decor => {
+                    const screenX = decor.x - camera.x;
+                    const screenY = decor.y - camera.y;
+                    
+                    if (screenX < -TILE_SIZE || screenY < -TILE_SIZE || 
+                        screenX > canvas.width || screenY > canvas.height) {
+                        return;
+                    }
+                    
+                    const tileX = Math.floor(decor.x / TILE_SIZE);
+                    const tileY = Math.floor(decor.y / TILE_SIZE);
+                    if (!fogOfWar[tileY][tileX]) return;
+                    
+                    if (decor.type === 'desk') {
+                        ctx.fillStyle = textures.desk;
+                        ctx.fillRect(screenX - TILE_SIZE/3, screenY - TILE_SIZE/4, TILE_SIZE/1.5, TILE_SIZE/2);
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(screenX - TILE_SIZE/3, screenY + TILE_SIZE/4, 5, TILE_SIZE/4);
+                        ctx.fillRect(screenX + TILE_SIZE/3 - 5, screenY + TILE_SIZE/4, 5, TILE_SIZE/4);
+                    } else if (decor.type === 'locker') {
+                        ctx.fillStyle = textures.locker;
+                        ctx.fillRect(screenX - TILE_SIZE/3, screenY - TILE_SIZE/2, TILE_SIZE/1.5, TILE_SIZE);
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(screenX - 2, screenY - TILE_SIZE/2 + 10, 4, TILE_SIZE - 20);
+                    } else if (decor.type === 'window') {
+                        ctx.fillStyle = textures.window;
+                        ctx.fillRect(screenX - TILE_SIZE/2, screenY - TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(screenX - 2, screenY - TILE_SIZE/2, 4, TILE_SIZE);
+                        ctx.fillRect(screenX - TILE_SIZE/2, screenY - 2, TILE_SIZE, 4);
+                    }
+                });
+            }
+            
+            function renderItems() {
+                items.forEach(item => {
+                    if (item.collected) return;
+                    
+                    const screenX = item.x - camera.x;
+                    const screenY = item.y - camera.y;
+                    
+                    if (screenX < -ITEM_SIZE || screenY < -ITEM_SIZE || 
+                        screenX > canvas.width || screenY > canvas.height) {
+                        return;
+                    }
+                    
+                    const tileX = Math.floor(item.x / TILE_SIZE);
+                    const tileY = Math.floor(item.y / TILE_SIZE);
+                    if (!fogOfWar[tileY][tileX]) return;
+                    
+                    if (item.type === 'key') {
+                        ctx.fillStyle = textures.key;
+                        ctx.beginPath();
+                        
+                        const floatOffset = Math.sin(frameCount / 10) * 5;
+                        
+                        ctx.arc(screenX, screenY + floatOffset - 5, 5, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.fillRect(screenX - 2, screenY + floatOffset, 4, 15);
+                        
+                        ctx.fillRect(screenX - 5, screenY + floatOffset + 12, 10, 3);
+                        ctx.fillRect(screenX - 3, screenY + floatOffset + 15, 6, 3);
+                        
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = textures.key;
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    } else if (item.type === 'medkit') {
+                        ctx.fillStyle = textures.medkit;
+                        ctx.beginPath();
+                        
+                        const floatOffset = Math.sin(frameCount / 10) * 5;
+                        
+                        ctx.fillRect(screenX - 8, screenY + floatOffset - 8, 16, 16);
+                        
+                        ctx.fillStyle = '#fff';
+                        ctx.fillRect(screenX - 4, screenY + floatOffset - 4, 8, 8);
+                        
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = textures.medkit;
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    } else if (item.type === 'battery') {
+                        ctx.fillStyle = textures.battery;
+                        ctx.beginPath();
+                        
+                        const floatOffset = Math.sin(frameCount / 10) * 5;
+                        
+                        ctx.fillRect(screenX - 10, screenY + floatOffset - 5, 20, 10);
+                        
+                        ctx.fillStyle = '#000';
+                        ctx.fillRect(screenX + 8, screenY + floatOffset - 2, 2, 4);
+                        
+                        ctx.shadowBlur = 10;
+                        ctx.shadowColor = textures.battery;
+                        ctx.fill();
+                        ctx.shadowBlur = 0;
+                    }
+                });
+            }
+            
+            function renderExit() {
+                const screenX = exit.x - camera.x;
+                const screenY = exit.y - camera.y;
+                
+                if (screenX < -TILE_SIZE || screenY < -TILE_SIZE || 
+                    screenX > canvas.width || screenY > canvas.height) {
+                    return;
+                }
+                
+                const tileX = Math.floor(exit.x / TILE_SIZE);
+                const tileY = Math.floor(exit.y / TILE_SIZE);
+                if (!fogOfWar[tileY][tileX]) return;
+                
+                ctx.fillStyle = textures.exit;
+                ctx.fillRect(screenX - TILE_SIZE/2, screenY - TILE_SIZE/2, TILE_SIZE, TILE_SIZE);
+                
+                ctx.fillStyle = '#ffd700';
+                ctx.fillRect(screenX + TILE_SIZE/2 - 10, screenY, 5, 10);
+                
+                ctx.fillStyle = '#000';
+                ctx.font = 'bold 16px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('ВЫХОД', screenX, screenY - 5);
+            }
+            
+            function renderEnemies() {
+                enemies.forEach(enemy => {
+                    if (!enemy.active) return;
+                    
+                    const screenX = enemy.x - camera.x;
+                    const screenY = enemy.y - camera.y;
+                    
+                    if (screenX < -ENEMY_SIZE || screenY < -ENEMY_SIZE || 
+                        screenX > canvas.width || screenY > canvas.height) {
+                        return;
+                    }
+                    
+                    const tileX = Math.floor(enemy.x / TILE_SIZE);
+                    const tileY = Math.floor(enemy.y / TILE_SIZE);
+                    if (!fogOfWar[tileY][tileX]) return;
+                    
+                    // Отрисовка врага с уникальным цветом
+                    ctx.fillStyle = enemy.color;
+                    
+                    // Более детализированная отрисовка врага
+                    // Голова
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY - 5, ENEMY_SIZE / 3, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Тело
+                    ctx.fillRect(screenX - 6, screenY, 12, ENEMY_SIZE / 1.2);
+                    
+                    // Руки
+                    const armOffset = Math.sin(enemy.spriteState) * 4;
+                    ctx.fillRect(screenX - 12, screenY + 5 + armOffset, 6, 3);
+                    ctx.fillRect(screenX + 6, screenY + 5 - armOffset, 6, 3);
+                    
+                    // Ноги
+                    const legOffset = Math.cos(enemy.spriteState) * 4;
+                    ctx.fillRect(screenX - 6, screenY + ENEMY_SIZE / 1.2, 4, 8 + legOffset);
+                    ctx.fillRect(screenX + 2, screenY + ENEMY_SIZE / 1.2, 4, 8 - legOffset);
+                    
+                    // Глаза
+                    ctx.fillStyle = '#000';
+                    ctx.beginPath();
+                    ctx.arc(screenX - 3, screenY - 7, 2, 0, Math.PI * 2);
+                    ctx.arc(screenX + 3, screenY - 7, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                    
+                    // Рот
+                    ctx.beginPath();
+                    ctx.arc(screenX, screenY - 2, 3, 0, Math.PI);
+                    ctx.stroke();
+                    
+                    // Индикатор обнаружения
+                    if (enemy.detectionProgress > 0) {
+                        const detectionPercent = Math.min(1, enemy.detectionProgress / enemy.detectionTime);
+                        ctx.fillStyle = 'rgba(255, 0, 0, ' + (0.5 * detectionPercent) + ')';
+                        ctx.beginPath();
+                        ctx.arc(screenX, screenY - 25, 15 * detectionPercent, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    
+                    // Имя врага
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '10px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(enemy.name, screenX, screenY - 35);
+                });
+            }
+            
+            function renderPlayer() {
+                const screenX = canvas.width / 2;
+                const screenY = canvas.height / 2;
+                
+                // Более детализированная отрисовка игрока
+                ctx.fillStyle = textures.player;
+                
+                // Голова
+                ctx.beginPath();
+                ctx.arc(screenX, screenY - 7, PLAYER_SIZE / 2.5, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Тело
+                ctx.fillRect(screenX - 6, screenY, 12, PLAYER_SIZE / 1.2);
+                
+                // Руки
+                const armOffset = Math.sin(player.spriteState) * 5;
+                ctx.fillRect(screenX - 10, screenY + 5 + armOffset, 5, 3);
+                ctx.fillRect(screenX + 5, screenY + 5 - armOffset, 5, 3);
+                
+                // Ноги
+                const legOffset = Math.cos(player.spriteState) * 5;
+                ctx.fillRect(screenX - 6, screenY + PLAYER_SIZE / 1.2, 4, 8 + legOffset);
+                ctx.fillRect(screenX + 2, screenY + PLAYER_SIZE / 1.2, 4, 8 - legOffset);
+                
+                // Глаза
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(screenX - 2, screenY - 8, 2, 0, Math.PI * 2);
+                ctx.arc(screenX + 2, screenY - 8, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Направление взгляда
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(screenX, screenY - 7);
+                ctx.lineTo(
+                    screenX + Math.cos(player.direction) * 12,
+                    screenY - 7 + Math.sin(player.direction) * 12
+                );
+                ctx.stroke();
+                
+                // Фонарик (только если включен и есть заряд)
+                if (player.flashlightOn && player.hasFlashlight && player.flashlight > 0) {
+                    ctx.fillStyle = 'rgba(255, 255, 200, 0.1)';
+                    ctx.beginPath();
+                    ctx.moveTo(screenX, screenY - 5);
+                    ctx.lineTo(
+                        screenX + Math.cos(player.direction - 0.3) * FOV,
+                        screenY - 5 + Math.sin(player.direction - 0.3) * FOV
+                    );
+                    ctx.lineTo(
+                        screenX + Math.cos(player.direction + 0.3) * FOV,
+                        screenY - 5 + Math.sin(player.direction + 0.3) * FOV
+                    );
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+            
+            function renderEffects() {
+                const centerX = canvas.width / 2;
+                const centerY = canvas.height / 2;
+                
+                // Эффект затемнения в зависимости от фонарика
+                let flashlightStrength = 0;
+                if (player.flashlightOn && player.hasFlashlight && player.flashlight > 0) {
+                    flashlightStrength = player.flashlight / 100;
+                }
+                
+                const gradient = ctx.createRadialGradient(
+                    centerX, centerY, FOV / 3 * flashlightStrength,
+                    centerX, centerY, FOV * flashlightStrength
+                );
+                gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+                gradient.addColorStop(1, 'rgba(0, 0, 0, 0.95)'); // Более темный эффект
+                
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Случайные эффекты страха
+                if (Math.random() < 0.001) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+            
+            function updateHUD() {
+                healthBar.style.width = player.health + '%';
+                fearBar.style.width = player.fear + '%';
+                flashlightBar.style.width = player.flashlight + '%';
+                
+                if (player.health > 100) player.health = 100;
+                if (player.health < 0) player.health = 0;
+                
+                if (player.fear > 100) player.fear = 100;
+                if (player.fear < 0) player.fear = 0;
+                
+                if (player.flashlight > 100) player.flashlight = 100;
+                if (player.flashlight < 0) player.flashlight = 0;
+                
+                if (player.health > 70) {
+                    healthBar.style.background = 'linear-gradient(90deg, #ff0000, #8a0303)';
+                    healthBar.classList.remove('pulse');
+                } else if (player.health > 30) {
+                    healthBar.style.background = 'linear-gradient(90deg, #ff5500, #cc4400)';
+                    healthBar.classList.remove('pulse');
+                } else {
+                    healthBar.style.background = 'linear-gradient(90deg, #ff9999, #ff5555)';
+                    healthBar.classList.add('pulse');
+                }
+                
+                if (player.flashlight > 30) {
+                    flashlightBar.style.background = 'linear-gradient(90deg, #ffff00, #ffa500)';
+                    flashlightBar.classList.remove('pulse');
+                } else {
+                    flashlightBar.style.background = 'linear-gradient(90deg, #ff5555, #ff0000)';
+                    flashlightBar.classList.add('pulse');
+                }
+            }
+            
+            function checkGameState() {
+                if (player.health <= 0) {
+                    gameOver();
+                }
+                
+                if (player.fear >= 100) {
+                    gameOver();
+                }
+            }
+            
+            function startFearEvents() {
+                setInterval(function() {
+                    if (!gameActive) return;
+                    
+                    // Случайные события страха
+                    if (Math.random() < 0.1) {
+                        player.fear += 5;
+                        
+                        if (Math.random() < 0.3) {
+                            const messages = [
+                                "Что это было?!",
+                                "Кто-то здесь...",
+                                "Я не один в этой школе...",
+                                "Этот звук...",
+                                "Мне нужно быстрее выбираться!"
+                            ];
+                            showMessage(messages[Math.floor(Math.random() * messages.length)], 1500);
+                        }
+                    }
+                }, 5000);
+            }
+            
+            function startObjectiveRotation() {
+                setInterval(function() {
+                    if (!gameActive) return;
+                    
+                    currentObjective = (currentObjective + 1) % objectives.length;
+                    objectivesElement.textContent = objectives[currentObjective];
+                }, 8000);
+            }
+            
+            function showMessage(text, duration) {
+                messageElement.textContent = text;
+                messageElement.style.opacity = '1';
+                
+                setTimeout(function() {
+                    messageElement.style.opacity = '0';
+                }, duration);
+            }
+            
+            function gameOver() {
+                gameActive = false;
+                gameOverScreen.style.display = 'flex';
+            }
+            
+            function gameWin() {
+                gameActive = false;
+                gameWinScreen.style.display = 'flex';
+            }
+            
+            // Обработчики событий для ПК
+            document.addEventListener('keydown', function(e) {
+                if (!gameActive) return;
+                
+                const key = e.key.toLowerCase();
+                if (keys.hasOwnProperty(key)) {
+                    keys[key] = true;
+                    e.preventDefault();
+                } else if (key === 'arrowup') {
+                    keys.arrowup = true;
+                    e.preventDefault();
+                } else if (key === 'arrowdown') {
+                    keys.arrowdown = true;
+                    e.preventDefault();
+                } else if (key === 'arrowleft') {
+                    keys.arrowleft = true;
+                    e.preventDefault();
+                } else if (key === 'arrowright') {
+                    keys.arrowright = true;
+                    e.preventDefault();
+                }
+            });
+            
+            document.addEventListener('keyup', function(e) {
+                if (!gameActive) return;
+                
+                const key = e.key.toLowerCase();
+                if (keys.hasOwnProperty(key)) {
+                    keys[key] = false;
+                } else if (key === 'arrowup') {
+                    keys.arrowup = false;
+                } else if (key === 'arrowdown') {
+                    keys.arrowdown = false;
+                } else if (key === 'arrowleft') {
+                    keys.arrowleft = false;
+                } else if (key === 'arrowright') {
+                    keys.arrowright = false;
+                }
+            });
+            
+            // Обработчики событий для мобильных устройств
+            if (isTouchDevice) {
+                // Кнопки управления
+                var handleButtonPress = function(btn, key) {
+                    btn.addEventListener('touchstart', function(e) {
+                        e.preventDefault();
+                        keys[key] = true;
+                        btn.classList.add('active');
+                    });
+                    
+                    btn.addEventListener('touchend', function(e) {
+                        e.preventDefault();
+                        keys[key] = false;
+                        btn.classList.remove('active');
+                    });
+                    
+                    btn.addEventListener('touchcancel', function(e) {
+                        e.preventDefault();
+                        keys[key] = false;
+                        btn.classList.remove('active');
+                    });
+                };
+                
+                handleButtonPress(upBtn, 'w');
+                handleButtonPress(downBtn, 's');
+                handleButtonPress(leftBtn, 'a');
+                handleButtonPress(rightBtn, 'd');
+                handleButtonPress(actionBtn, 'e');
+                handleButtonPress(flashlightBtn, 'f');
+                
+                // Джойстик
+                joystickArea.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                    var touch = e.touches[0];
+                    joystickActive = true;
+                    joystickOrigin.x = touch.clientX;
+                    joystickOrigin.y = touch.clientY;
+                    joystickPosition.x = touch.clientX;
+                    joystickPosition.y = touch.clientY;
+                    touchId = touch.identifier;
+                });
+                
+                joystickArea.addEventListener('touchmove', function(e) {
+                    if (!joystickActive) return;
+                    
+                    for (var i = 0; i < e.touches.length; i++) {
+                        var touch = e.touches[i];
+                        if (touch.identifier === touchId) {
+                            var rect = joystickArea.getBoundingClientRect();
+                            var maxDistance = rect.width / 2 - joystick.offsetWidth / 2;
+                            
+                            var dx = touch.clientX - joystickOrigin.x;
+                            var dy = touch.clientY - joystickOrigin.y;
+                            var distance = Math.sqrt(dx * dx + dy * dy);
+                            
+                            if (distance > maxDistance) {
+                                dx = dx * maxDistance / distance;
+                                dy = dy * maxDistance / distance;
+                            }
+                            
+                            joystickPosition.x = joystickOrigin.x + dx;
+                            joystickPosition.y = joystickOrigin.y + dy;
+                            
+                            joystick.style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+                            break;
+                        }
+                    }
+                });
+                
+                joystickArea.addEventListener('touchend', function(e) {
+                    if (!joystickActive) return;
+                    
+                    for (var i = 0; i < e.changedTouches.length; i++) {
+                        var touch = e.changedTouches[i];
+                        if (touch.identifier === touchId) {
+                            joystickActive = false;
+                            joystick.style.transform = 'translate(0, 0)';
+                            break;
+                        }
+                    }
+                });
+                
+                joystickArea.addEventListener('touchcancel', function(e) {
+                    if (!joystickActive) return;
+                    
+                    for (var i = 0; i < e.changedTouches.length; i++) {
+                        var touch = e.changedTouches[i];
+                        if (touch.identifier === touchId) {
+                            joystickActive = false;
+                            joystick.style.transform = 'translate(0, 0)';
+                            break;
+                        }
+                    }
+                });
+            }
+            
+            // Изменение размера canvas
+            window.addEventListener('resize', function() {
+                resizeCanvas();
+            });
+            
+            // Запуск игры
+            startBtn.addEventListener('click', initGame);
+            
+            for (var i = 0; i < restartBtns.length; i++) {
+                restartBtns[i].addEventListener('click', function() {
+                    gameOverScreen.style.display = 'none';
+                    gameWinScreen.style.display = 'none';
+                    initGame();
+                });
+            }
+            
+            // Симуляция загрузка
+            setTimeout(function() {
+                loadingScreen.style.display = 'none';
+                startScreen.style.display = 'flex';
+            }, 3000);
+        });
+    </script>
+</body>
+</html>
